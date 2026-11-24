@@ -1,0 +1,15 @@
+name = "bsd-research"
+defaultTargets = ["BSD"]
+
+[[require]]
+name = "mathlib"
+git = "https://github.com/leanprover-community/mathlib4"
+rev = "0df444a360eaa60ab8c11dca51a86af692955474"
+
+[[require]]
+name = "EllipticCurves"
+git = "https://github.com/MichaelStollBayreuth/EllipticCurves"
+rev = "7c476bd2eea67d7966f5f14e58da8b3f70ee59f8"
+
+[[lean_lib]]
+name = "BSD"
