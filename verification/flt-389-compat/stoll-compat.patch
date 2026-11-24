@@ -1,0 +1,859 @@
+--- a/EllipticCurves/Mathlib/AdicCompletionExtension.lean
++++ b/EllipticCurves/Mathlib/AdicCompletionExtension.lean
+@@ -347,7 +347,7 @@
+     IsUniformAddGroup (v.adicCompletionIntegers K) :=
+   ((Valued.v (R := v.adicCompletion K)).valuationSubring.toSubring.toAddSubgroup).isUniformAddGroup
+ 
+-instance isAdicComplete_adicCompletionIntegers :
++instance isAdicComplete_adicCompletionIntegers_stollCompat :
+     IsAdicComplete (IsLocalRing.maximalIdeal (v.adicCompletionIntegers K))
+       (v.adicCompletionIntegers K) :=
+   (v.isAdic_maximalIdeal_adicCompletionIntegers (K := K)).isAdicComplete_iff.mpr
+--- a/EllipticCurves/Mathlib/AdicFormalGroupLog.lean
++++ b/EllipticCurves/Mathlib/AdicFormalGroupLog.lean
+@@ -316,7 +316,7 @@
+         * pderiv K () (Φ.mulSeries m)
+       = m • Φ.diffMatrix⁻¹ () () := by
+   have h := congrArg (pderiv K ()) (Φ.subst_mulSeries_log m)
+-  rw [map_nsmul, pderiv_subst (Φ.hasSubst_mulSeries m), Φ.pderiv_log] at h
++  rw [map_nsmul, pderiv_subst_stollCompat (Φ.hasSubst_mulSeries m), Φ.pderiv_log] at h
+   simp only [Finset.univ_unique, Finset.sum_singleton, Φ.pderiv_log] at h
+   exact h
+ 
+--- a/EllipticCurves/Mathlib/Basic.lean
++++ b/EllipticCurves/Mathlib/Basic.lean
+@@ -50,7 +50,7 @@
+   `AdjoinRoot.modPowEquivPiFactors` on `n`-th power classes of units.
+ * `Polynomial.discr_X_sub_C_mul`: splitting off a linear factor multiplies the discriminant
+   by the square of the evaluation, `((X - C x) * g).discr = g.discr * g.eval x ^ 2`.
+-* `Matrix.det_blockDiagonal'`, `LinearMap.det_pi'`, `Algebra.norm_prod`, `Algebra.norm_pi`:
++* `Matrix.det_blockDiagonal'`, `LinearMap.det_pi'`, `Algebra.norm_prod_stollCompat`, `Algebra.norm_pi`:
+   determinants and norms on (dependent) products decompose as products; together with
+   `AdjoinRoot.norm_eq_prod_norm_projFactor`, the norm on `K[X]/(f)` as the product of the
+   norms on the field factors.
+@@ -437,7 +437,8 @@
+   refine ((Support.finite R x).union (Support.finite R x⁻¹)).subset fun v hv ↦ ?_
+   rcases lt_or_gt_of_ne hv with h | h
+   · refine .inr ?_
+-    rw [Support, Set.mem_ofPred_eq, map_inv₀,
++    change 1 < v.valuation K x⁻¹
++    rw [map_inv₀,
+       one_lt_inv₀ (zero_lt_iff.mpr ((Valuation.ne_zero_iff _).mpr hx))]
+     exact h
+   · exact .inl h
+@@ -1157,7 +1158,7 @@
+ /-! ### The norm on a product algebra -/
+ 
+ /-- The `R`-norm on a product algebra is the product of the norms. -/
+-theorem Algebra.norm_prod {R A B : Type*} [CommRing R] [CommRing A] [CommRing B] [Algebra R A]
++theorem Algebra.norm_prod_stollCompat {R A B : Type*} [CommRing R] [CommRing A] [CommRing B] [Algebra R A]
+     [Algebra R B] [Module.Free R A] [Module.Finite R A] [Module.Free R B] [Module.Finite R B]
+     (x : A × B) : Algebra.norm R x = Algebra.norm R x.1 * Algebra.norm R x.2 := by
+   have h : Algebra.lmul R (A × B) x = ((Algebra.lmul R A x.1).prodMap (Algebra.lmul R B x.2)) := by
+--- a/EllipticCurves/Mathlib/Chabauty/FormalGroupLaw/Basic.lean
++++ b/EllipticCurves/Mathlib/Chabauty/FormalGroupLaw/Basic.lean
+@@ -164,7 +164,7 @@
+   cases nonempty_fintype ι
+   ext i j
+   rw [Matrix.map_apply, Matrix.one_apply]
+-  have hch := MvPowerSeries.pderiv_subst (hasSubst_unitL (O := O) (ι := ι)) j (Φ.F i)
++  have hch := MvPowerSeries.pderiv_subst_stollCompat (hasSubst_unitL (O := O) (ι := ι)) j (Φ.F i)
+   rw [Φ.zero_add' i, MvPowerSeries.pderiv_X] at hch
+   have hsum : ∑ t : ι ⊕ ι,
+       MvPowerSeries.subst (Sum.elim (fun _ ↦ 0) MvPowerSeries.X : ι ⊕ ι → _)
+--- a/EllipticCurves/Mathlib/Chabauty/FormalGroupLaw/Invariance.lean
++++ b/EllipticCurves/Mathlib/Chabauty/FormalGroupLaw/Invariance.lean
+@@ -271,7 +271,7 @@
+       = MvPowerSeries.subst (assocLeftFam Φ.F) (pderiv O (Sum.inr k) (Φ.F i)) := by
+   classical
+   cases nonempty_fintype ι
+-  rw [pderiv_subst (hasSubst_assocLeft Φ)]
++  rw [pderiv_subst_stollCompat (hasSubst_assocLeft Φ)]
+   rw [Fintype.sum_sum_type]
+   have hinl (j : ι) : pderiv O (Sum.inr (Sum.inr k)) (assocLeftFam Φ.F (Sum.inl j)) = 0 := by
+     refine pderiv_subst_eq_zero hasSubst_emb12 _ ?_ _
+@@ -298,7 +298,7 @@
+           (pderiv O (Sum.inr k) (Φ.F j)) := by
+   classical
+   cases nonempty_fintype ι
+-  rw [pderiv_subst hasSubst_emb23, Fintype.sum_sum_type]
++  rw [pderiv_subst_stollCompat hasSubst_emb23, Fintype.sum_sum_type]
+   have hinl (a : ι) : pderiv O (Sum.inr (Sum.inr k))
+       (X (Sum.inr (Sum.inl a)) : MvPowerSeries (ι ⊕ ι ⊕ ι) O) = 0 := by
+     simp
+@@ -322,7 +322,7 @@
+           (pderiv O l h) := by
+   classical
+   cases nonempty_fintype ι
+-  rw [pderiv_subst (hasSubst_Yemb)]
++  rw [pderiv_subst_stollCompat (hasSubst_Yemb)]
+   have hx (t : ι) : pderiv O (Sum.inr l) (X (Sum.inr t) : MvPowerSeries (ι ⊕ ι) O)
+       = if t = l then 1 else 0 := by
+     simp [pderiv_X, Pi.single_apply]
+@@ -340,7 +340,7 @@
+           (pderiv O (Sum.inl l) h) := by
+   classical
+   cases nonempty_fintype ι
+-  rw [pderiv_subst (hasSubst_unitR), Fintype.sum_sum_type]
++  rw [pderiv_subst_stollCompat (hasSubst_unitR), Fintype.sum_sum_type]
+   have hinl (a : ι) : pderiv O l ((Sum.elim MvPowerSeries.X (fun _ ↦ 0)
+       : ι ⊕ ι → MvPowerSeries ι O) (Sum.inl a)) = if a = l then 1 else 0 := by
+     change pderiv O l (MvPowerSeries.X a : MvPowerSeries ι O) = _
+@@ -402,7 +402,7 @@
+           (pderiv O l h) := by
+   classical
+   cases nonempty_fintype ι
+-  rw [pderiv_subst (hasSubst_Xemb)]
++  rw [pderiv_subst_stollCompat (hasSubst_Xemb)]
+   have hx (t : ι) : pderiv O (Sum.inl l) (X (Sum.inl t) : MvPowerSeries (ι ⊕ ι) O)
+       = if t = l then 1 else 0 := by
+     simp [pderiv_X, Pi.single_apply]
+@@ -424,7 +424,7 @@
+                 : ι ⊕ ι → MvPowerSeries (ι ⊕ ι ⊕ ι) O)
+               (pderiv O (Sum.inr k) (Φ.F j)) := by
+   classical
+-  rw [pderiv_subst (hasSubst_assocRight Φ), Fintype.sum_sum_type]
++  rw [pderiv_subst_stollCompat (hasSubst_assocRight Φ), Fintype.sum_sum_type]
+   have hinl (j : ι) : pderiv O (Sum.inr (Sum.inr k)) (assocRightFam Φ.F (Sum.inl j)) = 0 := by
+     change pderiv O (Sum.inr (Sum.inr k)) (X (Sum.inl j) : MvPowerSeries (ι ⊕ ι ⊕ ι) O) = 0
+     simp
+@@ -509,7 +509,7 @@
+         + MvPowerSeries.subst (fun j : ι ↦ Φ.F j) (Φ.diffMatrix⁻¹ i a)
+             * pderiv O (Sum.inr l) (pderiv O (Sum.inr k) (Φ.F a)) := by
+     rw [Derivation.leibniz, smul_eq_mul, smul_eq_mul,
+-      mul_comm (pderiv O (Sum.inr k) (Φ.F a)), pderiv_subst (hasSubst_F Φ),
++      mul_comm (pderiv O (Sum.inr k) (Φ.F a)), pderiv_subst_stollCompat (hasSubst_F Φ),
+       Finset.sum_mul, add_comm]
+   rw [Finset.sum_congr rfl fun a _ ↦ hterm a, Finset.sum_add_distrib]
+ 
+--- a/EllipticCurves/Mathlib/Chabauty/FormalGroupLaw/Log.lean
++++ b/EllipticCurves/Mathlib/Chabauty/FormalGroupLaw/Log.lean
+@@ -213,7 +213,7 @@
+   have hsum : pderiv K (Sum.inr k) (MvPowerSeries.subst (fun j : ι ↦ Φ.F j) (Φ.log i))
+       = ∑ a, MvPowerSeries.subst (fun j : ι ↦ Φ.F j) (Φ.diffMatrix⁻¹ i a)
+           * pderiv K (Sum.inr k) (Φ.F a) := by
+-    rw [pderiv_subst (hasSubst_F Φ)]
++    rw [pderiv_subst_stollCompat (hasSubst_F Φ)]
+     exact Finset.sum_congr rfl fun a _ ↦ by rw [Φ.pderiv_log i a]
+   rw [map_add, hsum, diffMatrixInv_subst_F Φ i k, pderiv_Yemb, Φ.pderiv_log i k,
+     pderiv_subst_eq_zero hasSubst_Xemb (Sum.inr k) (fun _ ↦ by simp) (Φ.log i), zero_add]
+@@ -229,7 +229,7 @@
+   have hsum : pderiv K (Sum.inl k) (MvPowerSeries.subst (fun j : ι ↦ Φ.F j) (Φ.log i))
+       = ∑ a, MvPowerSeries.subst (fun j : ι ↦ Φ.F j) (Φ.diffMatrix⁻¹ i a)
+           * pderiv K (Sum.inl k) (Φ.F a) := by
+-    rw [pderiv_subst (hasSubst_F Φ)]
++    rw [pderiv_subst_stollCompat (hasSubst_F Φ)]
+     exact Finset.sum_congr rfl fun a _ ↦ by rw [Φ.pderiv_log i a]
+   rw [map_add, hsum, diffMatrixInv_subst_F_inl Φ i k, pderiv_Xemb, Φ.pderiv_log i k,
+     pderiv_subst_eq_zero hasSubst_Yemb (Sum.inl k) (fun _ ↦ by simp) (Φ.log i), add_zero]
+--- a/EllipticCurves/Mathlib/Chabauty/MvPSeries.lean
++++ b/EllipticCurves/Mathlib/Chabauty/MvPSeries.lean
+@@ -36,7 +36,7 @@
+ homomorphisms `MvPowerSeries.aeval_unique`), and the evaluated family is itself a
+ legitimate evaluation point (`ChabautyColeman.MvPSeries.hasEval_eval`).
+ 
+-The chain rule mentioned in the blueprint node is `MvPowerSeries.pderiv_subst` in
++The chain rule mentioned in the blueprint node is `MvPowerSeries.pderiv_subst_stollCompat` in
+ `EllipticCurves.Mathlib.Chabauty.MvPowerSeriesPDeriv`: Mathlib provides the formal partial
+ derivative `MvPowerSeries.pderiv`, but no chain rule for `subst`.
+ 
+--- a/EllipticCurves/Mathlib/Chabauty/MvPowerSeriesPDeriv.lean
++++ b/EllipticCurves/Mathlib/Chabauty/MvPowerSeriesPDeriv.lean
+@@ -18,7 +18,7 @@
+ # Formal partial derivatives of multivariate power series
+ 
+ Additions to Mathlib's `MvPowerSeries.pderiv`, the formal partial derivative with respect to
+-a variable. The chain rule for substitution (`MvPowerSeries.pderiv_subst`) is proved by
++a variable. The chain rule for substitution (`MvPowerSeries.pderiv_subst_stollCompat`) is proved by
+ continuity and density from the polynomial case: both sides are continuous for the product
+ topologies with *any* ring topology, so the proof instals the discrete topology and the
+ statement remains topology-free.
+@@ -99,7 +99,7 @@
+   simp only [coeff_pderiv]
+   exact (WithPiTopology.continuous_coeff R _).mul continuous_const
+ 
+--- The chain rule at a polynomial. The general case follows by density (`pderiv_subst`);
++-- The chain rule at a polynomial. The general case follows by density (`pderiv_subst_stollCompat`);
+ -- the induction is on the polynomial, so it cannot be run on a power series directly.
+ private theorem pderiv_subst_coe {τ : Type*} [Fintype τ] {a : τ → MvPowerSeries σ R}
+     (ha : HasSubst a) (s : σ) (p : MvPolynomial τ R) :
+@@ -144,7 +144,7 @@
+     ring
+ 
+ /-- The chain rule for formal partial derivatives of a substitution. -/
+-theorem pderiv_subst {τ : Type*} [Fintype τ] {a : τ → MvPowerSeries σ R}
++theorem pderiv_subst_stollCompat {τ : Type*} [Fintype τ] {a : τ → MvPowerSeries σ R}
+     (ha : HasSubst a) (s : σ) (f : MvPowerSeries τ R) :
+     pderiv R s (subst a f) = ∑ t : τ, subst a (pderiv R t f) * pderiv R s (a t) := by
+   let : UniformSpace R := ⊥
+@@ -178,7 +178,7 @@
+     (ha : HasSubst a) (s : σ) (hz : ∀ t, pderiv R s (a t) = 0) (f : MvPowerSeries τ R) :
+     pderiv R s (subst a f) = 0 := by
+   cases nonempty_fintype τ
+-  rw [pderiv_subst ha]
++  rw [pderiv_subst_stollCompat ha]
+   exact Finset.sum_eq_zero fun t _ ↦ by rw [hz t, mul_zero]
+ 
+ theorem coeff_X_mul_pderiv (s : σ) (f : MvPowerSeries σ R) (d : σ →₀ ℕ) :
+--- a/EllipticCurves/Mathlib/FormalGroup.lean
++++ b/EllipticCurves/Mathlib/FormalGroup.lean
+@@ -1,12 +1,10 @@
+-module
+-
+-public import Mathlib
+-public import EllipticCurves.Mathlib.Henselian
+-public import EllipticCurves.Mathlib.AdicCompletionExtension
+-public import EllipticCurves.Mathlib.SelmerGroup
+-
+-@[expose] public section
+-
++
++import Mathlib
++import EllipticCurves.Mathlib.Henselian
++import EllipticCurves.Mathlib.AdicCompletionExtension
++import EllipticCurves.Mathlib.SelmerGroup
++
++section
+ /-!
+ # Square classes of units over a local field
+ 
+--- a/EllipticCurves/Mathlib/RealEtale.lean
++++ b/EllipticCurves/Mathlib/RealEtale.lean
+@@ -508,7 +508,7 @@
+       = (∏ x : {x : ℝ // f.eval x = 0}, (etaleEquiv hf hsq a).1 x)
+         * ∏ p : {p : f.Factors // (p : ℝ[X]).natDegree = 2},
+             ((etaleEquiv hf hsq a).2 p).normSq := by
+-  rw [← Algebra.norm_eq_of_algEquiv (etaleEquiv hf hsq) a, Algebra.norm_prod, Algebra.norm_pi,
++  rw [← Algebra.norm_eq_of_algEquiv (etaleEquiv hf hsq) a, Algebra.norm_prod_stollCompat, Algebra.norm_pi,
+     Algebra.norm_pi]
+   congr 1
+   · exact Finset.prod_congr rfl fun x _ ↦ by rw [Algebra.norm_self]; rfl
+--- a/EllipticCurves/Mathlib/SelmerGroup.lean
++++ b/EllipticCurves/Mathlib/SelmerGroup.lean
+@@ -1,12 +1,11 @@
+-module
+-
+-public import EllipticCurves.Mathlib.Basic
+-public import EllipticCurves.Mathlib.FractionalIdeal
+-public import EllipticCurves.Mathlib.SIntegers
+-public import Mathlib
+-
+-@[expose] public section
+-
++
++import P2M.Sol.S_M4aHerbrand_sUnitQuot_fixedRank_eq
++import EllipticCurves.Mathlib.Basic
++import EllipticCurves.Mathlib.FractionalIdeal
++import EllipticCurves.Mathlib.SIntegers
++import Mathlib
++
++section
+ /-!
+ # Finiteness of Selmer groups
+ 
+--- a/EllipticCurves/MordellWeil.lean
++++ b/EllipticCurves/MordellWeil.lean
+@@ -1,11 +1,9 @@
+-module
+-
+-public import Mathlib
+-public import EllipticCurves.VariableChange
+-public import EllipticCurves.WeakMordellWeil
+-
+-@[expose] public section
+-
++
++import Mathlib
++import EllipticCurves.VariableChange
++import EllipticCurves.WeakMordellWeil
++
++section
+ /-!
+ # The Mordell-Weil Theorem
+ 
+--- a/EllipticCurves/SelmerGroup.lean
++++ b/EllipticCurves/SelmerGroup.lean
+@@ -1,15 +1,14 @@
+-module
+-
+-public import Mathlib
+-public import EllipticCurves.Mathlib.Basic
+-public import EllipticCurves.Mathlib.AdicCompletionExtension
+-public import EllipticCurves.Mathlib.FormalGroup
+-public import EllipticCurves.WeierstrassFormalGroup.Filtration
+-public import EllipticCurves.Mathlib.RealEtale
+-public import EllipticCurves.WeakMordellWeil
+-
+-@[expose] public section
+-
++
++import P2M.Sol.S_WeierstrassCurve_exists_algEquiv_map_eq_smul_and_map_eq_smul_add_of_transcendental_j
++import Mathlib
++import EllipticCurves.Mathlib.Basic
++import EllipticCurves.Mathlib.AdicCompletionExtension
++import EllipticCurves.Mathlib.FormalGroup
++import EllipticCurves.WeierstrassFormalGroup.Filtration
++import EllipticCurves.Mathlib.RealEtale
++import EllipticCurves.WeakMordellWeil
++
++section
+ /-!
+ # The 2-Selmer group of an elliptic curve
+ 
+--- a/EllipticCurves/WeakMordellWeil.lean
++++ b/EllipticCurves/WeakMordellWeil.lean
+@@ -1,11 +1,9 @@
+-module
+-
+-public import EllipticCurves.Mathlib.Basic
+-public import EllipticCurves.Mathlib.SelmerGroup
+-public import Mathlib
+-
+-@[expose] public section
+-
++
++import EllipticCurves.Mathlib.Basic
++import EllipticCurves.Mathlib.SelmerGroup
++import Mathlib
++
++section
+ /-!
+ # The Weak Mordell-Weil Theorem
+ 
+@@ -1387,7 +1385,7 @@
+   HeightOneSpectrum.valuation_liesOver _ _ _ z
+ 
+ /-- If `z` is integral at the prime below `w`, then it is integral at `w`. -/
+-lemma valuation_algebraMap_le_one [W.IsElliptic] [W.IsCharNeTwoNF] (p : W.f.Factors)
++lemma valuation_algebraMap_le_one_stollCompat [W.IsElliptic] [W.IsCharNeTwoNF] (p : W.f.Factors)
+     (w : HeightOneSpectrum (W.ringOfIntegersFactor R p)) {z : K}
+     (hz : (w.below R).valuation K z ≤ 1) :
+     w.valuation (𝕃 p) (ι p z) ≤ 1 := by
+@@ -1450,14 +1448,14 @@
+ `w`-integral: it satisfies the monic cubic `f`, whose coefficients are integral at `w`. -/
+ lemma valuation_root_le_one : w.valuation (𝕃 p) (θ p) ≤ 1 :=
+   Valuation.le_one_of_root_cubic _
+-    (W.valuation_algebraMap_le_one R p w ha₂)
+-    (W.valuation_algebraMap_le_one R p w ha₄)
+-    (W.valuation_algebraMap_le_one R p w ha₆)
++    (W.valuation_algebraMap_le_one_stollCompat R p w ha₂)
++    (W.valuation_algebraMap_le_one_stollCompat R p w ha₄)
++    (W.valuation_algebraMap_le_one_stollCompat R p w ha₆)
+     (W.root_cubic_eq_zero p)
+ 
+ /-- An element of `K` with trivial valuation at the prime below `w` has trivial valuation
+ at `w`. -/
+-lemma valuation_algebraMap_eq_one {z : K} (hz : (w.below R).valuation K z = 1) :
++lemma valuation_algebraMap_eq_one_stollCompat {z : K} (hz : (w.below R).valuation K z = 1) :
+     w.valuation (𝕃 p) (ι p z) = 1 := by
+   rw [← W.valuation_algebraMap_eq R p w z, hz, one_pow]
+ 
+@@ -1469,8 +1467,8 @@
+   have ht := W.valuation_root_le_one R p ha₂ ha₄ ha₆
+   have h : 3 * θ p ^ 2 + 2 * ι p W.a₂ * θ p + ι p W.a₄ ∈ (w.valuation (𝕃 p)).integer :=
+     add_mem (add_mem (mul_mem (ofNat_mem _ 3) (pow_mem ht 2))
+-      (mul_mem (mul_mem (ofNat_mem _ 2) (W.valuation_algebraMap_le_one R p w ha₂)) ht))
+-      (W.valuation_algebraMap_le_one R p w ha₄)
++      (mul_mem (mul_mem (ofNat_mem _ 2) (W.valuation_algebraMap_le_one_stollCompat R p w ha₂)) ht))
++      (W.valuation_algebraMap_le_one_stollCompat R p w ha₄)
+   exact h
+ 
+ include ha₂ ha₄ ha₆ hd in
+@@ -1488,9 +1486,9 @@
+   set A₂ := algebraMap K L W.a₂
+   set A := algebraMap K L W.a₄
+   set B := algebraMap K L W.a₆
+-  have hA₂ : ν A₂ ≤ 1 := W.valuation_algebraMap_le_one R p w ha₂
+-  have hA : ν A ≤ 1 := W.valuation_algebraMap_le_one R p w ha₄
+-  have hB : ν B ≤ 1 := W.valuation_algebraMap_le_one R p w ha₆
++  have hA₂ : ν A₂ ≤ 1 := W.valuation_algebraMap_le_one_stollCompat R p w ha₂
++  have hA : ν A ≤ 1 := W.valuation_algebraMap_le_one_stollCompat R p w ha₄
++  have hB : ν B ≤ 1 := W.valuation_algebraMap_le_one_stollCompat R p w ha₆
+   have ht : ν t ≤ 1 := W.valuation_root_le_one R p ha₂ ha₄ ha₆
+   -- both factors in `deriv_root_mul_eq_discr_f` are integral, and their product is a unit
+   have hD : ν (3 * t ^ 2 + 2 * A₂ * t + A) ≤ 1 :=
+@@ -1505,7 +1503,7 @@
+         (mul_mem (ofNat_mem _ 4) (pow_mem hA 2))) (mul_mem (mul_mem (ofNat_mem _ 3) hA₂) hB)
+   refine ν.eq_one_of_mul_eq_one hD hC ?_
+   rw [deriv_root_mul_eq_discr_f]
+-  exact W.valuation_algebraMap_eq_one R p hd
++  exact W.valuation_algebraMap_eq_one_stollCompat R p hd
+ 
+ include ha₂ ha₄ ha₆ hderiv in
+ /-- If the coefficients of the cubic are integral at the prime below `w` and `f' θ` is a
+@@ -1522,7 +1520,7 @@
+   set s := algebraMap K L x
+   set A₂ := algebraMap K L W.a₂
+   set A := algebraMap K L W.a₄
+-  have hA₂ : ν A₂ ≤ 1 := W.valuation_algebraMap_le_one R p w ha₂
++  have hA₂ : ν A₂ ≤ 1 := W.valuation_algebraMap_le_one_stollCompat R p w ha₂
+   have ht : ν t ≤ 1 := W.valuation_root_le_one R p ha₂ ha₄ ha₆
+   have h2t : s + 2 * t + A₂ ∈ ν.integer :=
+     add_mem (add_mem hx (mul_mem (ofNat_mem _ 2) ht)) hA₂
+@@ -1556,14 +1554,14 @@
+   set A₂ := algebraMap K L W.a₂ with hA₂def
+   set A := algebraMap K L W.a₄ with hAdef
+   set B := algebraMap K L W.a₆ with hBdef
+-  have hA₂ : ν A₂ ≤ 1 := W.valuation_algebraMap_le_one R p w ha₂
+-  have hA : ν A ≤ 1 := W.valuation_algebraMap_le_one R p w ha₄
+-  have hB : ν B ≤ 1 := W.valuation_algebraMap_le_one R p w ha₆
++  have hA₂ : ν A₂ ≤ 1 := W.valuation_algebraMap_le_one_stollCompat R p w ha₂
++  have hA : ν A ≤ 1 := W.valuation_algebraMap_le_one_stollCompat R p w ha₄
++  have hB : ν B ≤ 1 := W.valuation_algebraMap_le_one_stollCompat R p w ha₆
+   have ht : ν t ≤ 1 := W.valuation_root_le_one R p ha₂ ha₄ ha₆
+   -- the `w`-unit `f'(x)`, transported to `L`
+   have hderiv : ν (3 * s ^ 2 + 2 * A₂ * s + A) = 1 := by
+     simpa only [map_add, map_mul, map_pow, map_ofNat]
+-      using W.valuation_algebraMap_eq_one R p (w := w) hdx
++      using W.valuation_algebraMap_eq_one_stollCompat R p (w := w) hdx
+   -- `x` is a root of the cubic too, hence integral at `w`
+   have hs : s ^ 3 + A₂ * s ^ 2 + A * s + B = 0 := by
+     rw [hsdef, hA₂def, hAdef, hBdef, ← W.map_eval_f, hx, map_zero]
+@@ -1629,8 +1627,8 @@
+       algebraMap K L W.a₄ * algebraMap K L x + algebraMap K L W.a₆ := by
+     rw [← W.map_eval_f, (equation_iff_eval_f_eq_sq W x y).mp h, map_pow]
+   have hval : ν (algebraMap K L y) ^ 2 = ν (algebraMap K L x) ^ 3 := by
+-    rw [← map_pow, heq, ν.map_cubic_of_one_lt (W.valuation_algebraMap_le_one R p w ha₂)
+-      (W.valuation_algebraMap_le_one R p w ha₄) (W.valuation_algebraMap_le_one R p w ha₆) hx']
++    rw [← map_pow, heq, ν.map_cubic_of_one_lt (W.valuation_algebraMap_le_one_stollCompat R p w ha₂)
++      (W.valuation_algebraMap_le_one_stollCompat R p w ha₄) (W.valuation_algebraMap_le_one_stollCompat R p w ha₆) hx']
+   -- `ν (x - θ) = ν x`, since `θ` is integral and `x` is not
+   have hu' : ν (u : L) = ν (algebraMap K L x) := by
+     rw [hu]
+--- a/EllipticCurves/WeierstrassFormalGroup/Eval.lean
++++ b/EllipticCurves/WeierstrassFormalGroup/Eval.lean
+@@ -541,22 +541,22 @@
+ omit h₁ h₂
+ 
+ /-- The formal inverse on the `𝔪`-points of the formal group of a Weierstrass curve. -/
+-noncomputable def negPoint (z : W.formalGroupLaw.Points) : W.formalGroupLaw.Points :=
++noncomputable def negPoint (z : W.formalGroupLaw_stollCompat.Points) : W.formalGroupLaw_stollCompat.Points :=
+   fun _ ↦ ⟨W.iotaEval (z ()), W.iotaEval_mem (z ()).2⟩
+ 
+ @[simp]
+-theorem negPoint_apply_coe (z : W.formalGroupLaw.Points) :
++theorem negPoint_apply_coe (z : W.formalGroupLaw_stollCompat.Points) :
+     ((W.negPoint z) () : O) = W.iotaEval (z ()) := rfl
+ 
+ /-- The coordinate of a sum of `𝔪`-points is the evaluated addition series. -/
+-theorem add_apply_coe_eq_addEval (z z' : W.formalGroupLaw.Points) :
++theorem add_apply_coe_eq_addEval (z z' : W.formalGroupLaw_stollCompat.Points) :
+     ((z + z') () : O) = W.addEval (z ()) (z' ()) := rfl
+ 
+ /-- The coordinate of an `m`-fold multiple is the value of the multiplication-by-`m`
+ series at the parameter. -/
+-theorem nsmul_apply_coe_eq_eval (z : W.formalGroupLaw.Points) (m : ℕ) :
++theorem nsmul_apply_coe_eq_eval (z : W.formalGroupLaw_stollCompat.Points) (m : ℕ) :
+     ((m • z) () : O) = MvPSeries.eval (fun _ : Unit ↦ (z () : O))
+-      (W.formalGroupLaw.mulSeries m) := by
++      (W.formalGroupLaw_stollCompat.mulSeries m) := by
+   induction m with
+   | zero =>
+     rw [zero_smul, FormalGroupLaw.mulSeries_zero, MvPSeries.eval_zero,
+@@ -565,7 +565,7 @@
+     have hE : MvPowerSeries.HasEval (fun _ : Unit ↦ (z () : O)) :=
+       MvPSeries.hasEval_of_mem fun _ ↦ (z ()).2
+     rw [succ_nsmul', add_apply_coe_eq_addEval, ih, FormalGroupLaw.mulSeries_succ,
+-      MvPSeries.eval_subst hE (W.formalGroupLaw.hasSubst_mulSeries_pair m), addEval]
++      MvPSeries.eval_subst hE (W.formalGroupLaw_stollCompat.hasSubst_mulSeries_pair m), addEval]
+     congr 1
+     funext i
+     rcases i with u | u
+@@ -575,7 +575,7 @@
+ /-- First-order congruence for multiples: the parameter of `m • z` lies in the same
+ `𝔪`-power level as the parameter of `z` and is congruent to `m` times it modulo the
+ double level. -/
+-theorem nsmul_apply_coe_mem_and_sub_mem {z : W.formalGroupLaw.Points} {k : ℕ} (hk : k ≠ 0)
++theorem nsmul_apply_coe_mem_and_sub_mem {z : W.formalGroupLaw_stollCompat.Points} {k : ℕ} (hk : k ≠ 0)
+     (hz : (z () : O) ∈ maximalIdeal O ^ k) (m : ℕ) :
+     ((m • z) () : O) ∈ maximalIdeal O ^ k ∧
+       ((m • z) () : O) - m • (z () : O) ∈ maximalIdeal O ^ (2 * k) := by
+@@ -602,7 +602,7 @@
+       exact add_mem h1 ih.2
+ 
+ /-- The formal inverse is a right inverse for the addition of `𝔪`-points. -/
+-theorem add_negPoint (z : W.formalGroupLaw.Points) : z + W.negPoint z = 0 := by
++theorem add_negPoint (z : W.formalGroupLaw_stollCompat.Points) : z + W.negPoint z = 0 := by
+   funext i
+   refine Subtype.ext ?_
+   rw [show ((z + W.negPoint z) i : O) = W.addEval (z ()) (W.iotaEval (z ())) from rfl,
+--- a/EllipticCurves/WeierstrassFormalGroup/Filtration.lean
++++ b/EllipticCurves/WeierstrassFormalGroup/Filtration.lean
+@@ -49,16 +49,16 @@
+ /-- The point of the kernel of reduction attached to an `𝔪`-point of the formal group of
+ the integral model `W₀`: the parameter `t` gives the affine point `(t/w(t), -1/w(t))`,
+ and `t = 0` gives the point at infinity. -/
+-noncomputable def formalPoint (z : W₀.formalGroupLaw.Points) : W.Point :=
++noncomputable def formalPoint (z : W₀.formalGroupLaw_stollCompat.Points) : W.Point :=
+   if h0 : (z () : v.adicCompletionIntegers K) = 0 then 0
+   else .some _ _ (formalPoint_nonsingular hW (z ()).2 h0)
+ 
+ @[simp]
+-lemma formalPoint_of_param_eq_zero {z : W₀.formalGroupLaw.Points}
++lemma formalPoint_of_param_eq_zero {z : W₀.formalGroupLaw_stollCompat.Points}
+     (h0 : (z () : v.adicCompletionIntegers K) = 0) : formalPoint hW z = 0 :=
+   dif_pos h0
+ 
+-lemma formalPoint_of_param_ne_zero {z : W₀.formalGroupLaw.Points}
++lemma formalPoint_of_param_ne_zero {z : W₀.formalGroupLaw_stollCompat.Points}
+     (h0 : (z () : v.adicCompletionIntegers K) ≠ 0) :
+     formalPoint hW z = .some _ _ (formalPoint_nonsingular hW (z ()).2 h0) :=
+   dif_neg h0
+@@ -92,7 +92,7 @@
+ in `𝔪`. -/
+ theorem exists_formalPoint_eq_some {x y : v.adicCompletion K} (h : W.Nonsingular x y)
+     (hx : exp (2 : ℤ) ≤ Valued.v x) :
+-    ∃ z : W₀.formalGroupLaw.Points, formalPoint hW z = .some x y h := by
++    ∃ z : W₀.formalGroupLaw_stollCompat.Points, formalPoint hW z = .some x y h := by
+   obtain ⟨hy0, hs, hr⟩ := valued_of_mem hW h.left hx
+   have hexp1 : (exp (-1 : ℤ) : ℤᵐ⁰) ≤ 1 := by
+     rw [← exp_zero, exp_le_exp]
+@@ -129,7 +129,7 @@
+     W₀.eq_of_wPoly_fixed htm (W₀.wEval_mem htm) hrm (W₀.wEval_eq htm) hfixO
+   -- naming the point gives it the type `Points` syntactically, so `rw` can pass through
+   -- `formalPoint hW u` (a term of type `Unit → maximalIdeal _` is only defeq to `Points`)
+-  set u : W₀.formalGroupLaw.Points := fun _ ↦ ⟨t, htm⟩
++  set u : W₀.formalGroupLaw_stollCompat.Points := fun _ ↦ ⟨t, htm⟩
+   refine ⟨u, ?_⟩
+   rw [formalPoint_of_param_ne_zero hW ht0]
+   simp only [Point.some.injEq]
+@@ -143,7 +143,7 @@
+     show -1 / (-1 / y) = y
+     field_simp
+ 
+-theorem formalPoint_eq_zero_iff {z : W₀.formalGroupLaw.Points} :
++theorem formalPoint_eq_zero_iff {z : W₀.formalGroupLaw_stollCompat.Points} :
+     formalPoint hW z = 0 ↔ (z () : v.adicCompletionIntegers K) = 0 := by
+   refine ⟨fun h ↦ ?_, formalPoint_of_param_eq_zero hW⟩
+   by_contra h0
+@@ -152,7 +152,7 @@
+ 
+ include hW in
+ /-- The parametrization intertwines the formal inverse with negation of points. -/
+-theorem formalPoint_negPoint (z : W₀.formalGroupLaw.Points) :
++theorem formalPoint_negPoint (z : W₀.formalGroupLaw_stollCompat.Points) :
+     formalPoint hW (W₀.negPoint z) = -formalPoint hW z := by
+   rcases eq_or_ne ((z ()) : v.adicCompletionIntegers K) 0 with h0 | h0
+   · rw [formalPoint_of_param_eq_zero hW h0, formalPoint_of_param_eq_zero hW
+@@ -229,7 +229,7 @@
+ include hW in
+ /-- The chord case of additivity: two nonzero parameters whose points have distinct
+ `x`-coordinates. -/
+-private lemma formalPoint_add_of_x_ne {z z' : W₀.formalGroupLaw.Points}
++private lemma formalPoint_add_of_x_ne {z z' : W₀.formalGroupLaw_stollCompat.Points}
+     (h0 : (z () : v.adicCompletionIntegers K) ≠ 0)
+     (h0' : (z' () : v.adicCompletionIntegers K) ≠ 0)
+     (hx : ((z () : v.adicCompletionIntegers K) : v.adicCompletion K) *
+@@ -267,7 +267,7 @@
+ include hW in
+ /-- Two nonzero parameters whose points share their `x`-coordinate agree up to the formal
+ inverse. -/
+-private lemma eq_or_eq_negPoint_of_x_cond {z z' : W₀.formalGroupLaw.Points}
++private lemma eq_or_eq_negPoint_of_x_cond {z z' : W₀.formalGroupLaw_stollCompat.Points}
+     (h0 : (z () : v.adicCompletionIntegers K) ≠ 0)
+     (h0' : (z' () : v.adicCompletionIntegers K) ≠ 0)
+     (hx : ((z () : v.adicCompletionIntegers K) : v.adicCompletion K) *
+@@ -303,7 +303,7 @@
+ include hW in
+ /-- Additivity of the parametrization when the parameters are distinct and not related by
+ the formal inverse. -/
+-private lemma formalPoint_add_of_ne {z z' : W₀.formalGroupLaw.Points}
++private lemma formalPoint_add_of_ne {z z' : W₀.formalGroupLaw_stollCompat.Points}
+     (h0 : (z () : v.adicCompletionIntegers K) ≠ 0)
+     (h0' : (z' () : v.adicCompletionIntegers K) ≠ 0)
+     (hne : z' ≠ z) (hnneg : z' ≠ W₀.negPoint z) :
+@@ -316,7 +316,7 @@
+ include hW in
+ /-- If additivity holds for a pair whose second point is not the negative of the first,
+ the parameter of the sum does not vanish. -/
+-private lemma add_param_ne_zero {z w : W₀.formalGroupLaw.Points}
++private lemma add_param_ne_zero {z w : W₀.formalGroupLaw_stollCompat.Points}
+     (hc : formalPoint hW (z + w) = formalPoint hW z + formalPoint hW w)
+     (hne : w ≠ W₀.negPoint z) :
+     ((z + w) () : v.adicCompletionIntegers K) ≠ 0 := by
+@@ -331,7 +331,7 @@
+ include hW in
+ /-- The doubling case of additivity, via an auxiliary point of very small valuation
+ (which turns all needed additions into chord cases). -/
+-private lemma formalPoint_add_self {z : W₀.formalGroupLaw.Points}
++private lemma formalPoint_add_self {z : W₀.formalGroupLaw_stollCompat.Points}
+     (h0 : (z () : v.adicCompletionIntegers K) ≠ 0)
+     (h2t : (z () : v.adicCompletionIntegers K) ≠ W₀.iotaEval (z ())) :
+     formalPoint hW (z + z) = formalPoint hW z + formalPoint hW z := by
+@@ -371,7 +371,7 @@
+ 
+ include hW in
+ /-- The parametrization of the kernel of reduction is additive. -/
+-theorem formalPoint_add (z z' : W₀.formalGroupLaw.Points) :
++theorem formalPoint_add (z z' : W₀.formalGroupLaw_stollCompat.Points) :
+     formalPoint hW (z + z') = formalPoint hW z + formalPoint hW z' := by
+   rcases eq_or_ne (z () : v.adicCompletionIntegers K) 0 with h0 | h0
+   · have hz : z = 0 := funext fun _ ↦ Subtype.ext h0
+@@ -469,7 +469,7 @@
+ 
+ /-- The filtration correspondence: the parameter lies in `𝔪^(n+1)` exactly when the
+ associated point lies in the filtration step `E_{n+1}(K_v)`. -/
+-theorem mem_pow_iff_formalPoint_mem_filtration (z : W₀.formalGroupLaw.Points) (n : ℕ) :
++theorem mem_pow_iff_formalPoint_mem_filtration (z : W₀.formalGroupLaw_stollCompat.Points) (n : ℕ) :
+     (z () : v.adicCompletionIntegers K) ∈
+         maximalIdeal (v.adicCompletionIntegers K) ^ (n + 1) ↔
+       formalPoint hW z ∈ filtration hW n := by
+@@ -482,7 +482,7 @@
+ parametrization by the `𝔪`-points of the formal group is surjective onto
+ `filtration hW 0`. -/
+ theorem formalPoint_surjective {P : W.Point} (hP : P ∈ filtration hW 0) :
+-    ∃ z : W₀.formalGroupLaw.Points, formalPoint hW z = P := by
++    ∃ z : W₀.formalGroupLaw_stollCompat.Points, formalPoint hW z = P := by
+   match P with
+   | .zero => exact ⟨0, formalPoint_of_param_eq_zero hW (z := 0) (by simp)⟩
+   | .some x y h =>
+@@ -494,16 +494,16 @@
+ `y = -1/w(z)`; the equivalence matches the filtration by valuation on both sides
+ (Silverman, VII.2.2). -/
+ theorem exists_points_equiv_filtration :
+-    ∃ θ : W₀.formalGroupLaw.Points ≃+ filtration hW 0,
+-      ∀ (z : W₀.formalGroupLaw.Points) (n : ℕ),
++    ∃ θ : W₀.formalGroupLaw_stollCompat.Points ≃+ filtration hW 0,
++      ∀ (z : W₀.formalGroupLaw_stollCompat.Points) (n : ℕ),
+         ((z () : v.adicCompletionIntegers K) ∈
+             maximalIdeal (v.adicCompletionIntegers K) ^ (n + 1) ↔
+           ((θ z : filtration hW 0) : W.Point) ∈ filtration hW n) := by
+-  have hmap : ∀ z : W₀.formalGroupLaw.Points, formalPoint hW z ∈ filtration hW 0 :=
++  have hmap : ∀ z : W₀.formalGroupLaw_stollCompat.Points, formalPoint hW z ∈ filtration hW 0 :=
+     fun z ↦ (mem_pow_iff_formalPoint_mem_filtration z 0).mp (by
+       rw [pow_one]
+       exact (z ()).2)
+-  let f : W₀.formalGroupLaw.Points →+ filtration hW 0 :=
++  let f : W₀.formalGroupLaw_stollCompat.Points →+ filtration hW 0 :=
+     { toFun := fun z ↦ ⟨formalPoint hW z, hmap z⟩
+       map_zero' := Subtype.ext (formalPoint_of_param_eq_zero hW (z := 0) (by simp))
+       map_add' := fun z z' ↦ Subtype.ext (formalPoint_add hW z z') }
+@@ -645,13 +645,13 @@
+   · exact exists_level_sub_mem_of_ne_negY h₀ hx₀ hψ0
+ 
+ private lemma sfun_add {n : ℕ} {π : v.adicCompletionIntegers K} (hπ0 : π ≠ 0)
+-    (θ : W₀.formalGroupLaw.Points ≃+ filtration hW 0) {sfun : filtration hW n →
++    (θ : W₀.formalGroupLaw_stollCompat.Points ≃+ filtration hW 0) {sfun : filtration hW n →
+       v.adicCompletionIntegers K}
+     (hsmem : ∀ P, sfun P ∈ maximalIdeal (v.adicCompletionIntegers K))
+     (hseq : ∀ P, (θ.symm (AddSubgroup.inclusion (filtration_anti (hW := hW) n.zero_le) P) () :
+       v.adicCompletionIntegers K) = π ^ n * sfun P) (P Q : filtration hW n) :
+     sfun (P + Q) = MvPSeries.eval (Sum.elim (fun _ : Unit ↦ sfun P) fun _ : Unit ↦ sfun Q)
+-      (W₀.formalGroupLaw.scaledFC (π ^ n) ()) := by
++      (W₀.formalGroupLaw_stollCompat.scaledFC (π ^ n) ()) := by
+   refine mul_left_cancel₀ (pow_ne_zero n hπ0) ?_
+   calc π ^ n * sfun (P + Q)
+       = (θ.symm (AddSubgroup.inclusion (filtration_anti (hW := hW) n.zero_le) (P + Q)) () :
+@@ -659,12 +659,12 @@
+     _ = W₀.addEval (π ^ n * sfun P) (π ^ n * sfun Q) := by
+         rw [map_add, map_add, W₀.add_apply_coe_eq_addEval, hseq, hseq]
+     _ = π ^ n * MvPSeries.eval (Sum.elim (fun _ : Unit ↦ sfun P) fun _ : Unit ↦ sfun Q)
+-          (W₀.formalGroupLaw.scaledFC (π ^ n) ()) :=
+-        ChabautyColeman.eval_F_eq_mul_eval_scaledFC W₀.formalGroupLaw (π ^ n)
++          (W₀.formalGroupLaw_stollCompat.scaledFC (π ^ n) ()) :=
++        ChabautyColeman.eval_F_eq_mul_eval_scaledFC W₀.formalGroupLaw_stollCompat (π ^ n)
+           (hsmem P) (hsmem Q)
+ 
+ private lemma sfun_eval_injective {n : ℕ} {π : v.adicCompletionIntegers K}
+-    (θ : W₀.formalGroupLaw.Points ≃+ filtration hW 0)
++    (θ : W₀.formalGroupLaw_stollCompat.Points ≃+ filtration hW 0)
+     {lhat ehat : MvPowerSeries Unit (v.adicCompletionIntegers K)}
+     (hl0 : MvPowerSeries.constantCoeff lhat = 0)
+     (hel : MvPowerSeries.subst (fun _ : Unit ↦ lhat) ehat = MvPowerSeries.X ())
+@@ -686,8 +686,8 @@
+ 
+ private lemma exists_sfun_eval_eq {n : ℕ} {π : v.adicCompletionIntegers K} (hπ0 : π ≠ 0)
+     (hmax : maximalIdeal (v.adicCompletionIntegers K) = Ideal.span {π})
+-    (θ : W₀.formalGroupLaw.Points ≃+ filtration hW 0)
+-    (hθ : ∀ (z : W₀.formalGroupLaw.Points) (m : ℕ),
++    (θ : W₀.formalGroupLaw_stollCompat.Points ≃+ filtration hW 0)
++    (hθ : ∀ (z : W₀.formalGroupLaw_stollCompat.Points) (m : ℕ),
+       ((z () : v.adicCompletionIntegers K) ∈
+           maximalIdeal (v.adicCompletionIntegers K) ^ (m + 1) ↔
+         ((θ z : filtration hW 0) : W.Point) ∈ filtration hW m))
+@@ -701,7 +701,7 @@
+     ∃ P : filtration hW n, MvPSeries.eval (fun _ : Unit ↦ sfun P) lhat = w := by
+   have hsw : MvPSeries.eval (fun _ : Unit ↦ w) ehat ∈
+       maximalIdeal (v.adicCompletionIntegers K) := ChabautyColeman.eval_unit_mem hw he0
+-  obtain ⟨z, hzdef⟩ : ∃ z : W₀.formalGroupLaw.Points, z = fun _ ↦
++  obtain ⟨z, hzdef⟩ : ∃ z : W₀.formalGroupLaw_stollCompat.Points, z = fun _ ↦
+     ⟨π ^ n * MvPSeries.eval (fun _ : Unit ↦ w) ehat, Ideal.mul_mem_left _ _ hsw⟩ := ⟨_, rfl⟩
+   have hzpow : (z () : v.adicCompletionIntegers K) ∈
+       maximalIdeal (v.adicCompletionIntegers K) ^ (n + 1) := by
+@@ -784,7 +784,7 @@
+     (filtration hW (k + 1)).relIndex (filtration hW k) ≠ 0 := by
+   obtain ⟨θ, hθ⟩ := exists_points_equiv_filtration (hW := hW)
+   -- the parameter of a point of the `k`-th filtration step
+-  obtain ⟨par, hpar⟩ : ∃ par : filtration hW k → W₀.formalGroupLaw.Points,
++  obtain ⟨par, hpar⟩ : ∃ par : filtration hW k → W₀.formalGroupLaw_stollCompat.Points,
+       par = fun P ↦ θ.symm ⟨P.1, filtration_anti (Nat.zero_le k) P.2⟩ := ⟨_, rfl⟩
+   have hθpar (P : filtration hW k) : ((θ (par P) : filtration hW 0) : W.Point) = P.1 := by
+     rw [hpar, θ.apply_symm_apply]
+@@ -901,7 +901,7 @@
+     (v.adicCompletion K)) = W) :
+     ∃ n, Nonempty (filtration hW n ≃+ v.adicCompletionIntegers K) := by
+   obtain ⟨n, π, lhat, ehat, -, hπ0, hmax, hl0, he0, hle, hel, hadd⟩ :=
+-    exists_scaledLog (v := v) (K := K) W₀.formalGroupLaw
++    exists_scaledLog (v := v) (K := K) W₀.formalGroupLaw_stollCompat
+   obtain ⟨θ, hθ⟩ := exists_points_equiv_filtration (hW := hW)
+   -- the scaled parameter `s_P` of a point of the `n`-th filtration step
+   have hs (P : filtration hW n) : ∃ s ∈ maximalIdeal (v.adicCompletionIntegers K),
+@@ -927,7 +927,7 @@
+   change MvPSeries.eval (fun _ : Unit ↦ sfun (P + Q)) lhat
+     = MvPSeries.eval (fun _ : Unit ↦ sfun P) lhat + MvPSeries.eval (fun _ : Unit ↦ sfun Q) lhat
+   rw [sfun_add hπ0 θ hsmem hseq P Q]
+-  exact ChabautyColeman.eval_scaledFC_add W₀.formalGroupLaw hadd (hsmem P) (hsmem Q)
++  exact ChabautyColeman.eval_scaledFC_add W₀.formalGroupLaw_stollCompat hadd (hsmem P) (hsmem Q)
+ 
+ end WeierstrassCurve.Affine
+ 
+--- a/EllipticCurves/WeierstrassFormalGroup/Foundations.lean
++++ b/EllipticCurves/WeierstrassFormalGroup/Foundations.lean
+@@ -490,7 +490,7 @@
+     exact hks
+   · exact ne_iotaEval_self hsm hs0 (by rw [hsv, h2v, exp_lt_exp]; exact hkc)
+ 
+-private lemma ne_of_coe_ne {z z' : W₀.formalGroupLaw.Points}
++private lemma ne_of_coe_ne {z z' : W₀.formalGroupLaw_stollCompat.Points}
+     (h : (z () : v.adicCompletionIntegers K) ≠ (z' () : v.adicCompletionIntegers K)) :
+     z ≠ z' :=
+   fun h' ↦ h (congrArg (fun w ↦ (w () : v.adicCompletionIntegers K)) h')
+@@ -498,15 +498,15 @@
+ /-- An auxiliary point of the formal group avoiding a given nonzero point `z`, its formal
+ inverse, and its own formal inverse (so that all sums involved in doubling `z` are chord
+ cases). -/
+-private lemma exists_aux_point [CharZero K] {z : W₀.formalGroupLaw.Points}
++private lemma exists_aux_point [CharZero K] {z : W₀.formalGroupLaw_stollCompat.Points}
+     (h0 : (z () : v.adicCompletionIntegers K) ≠ 0) :
+-    ∃ u : W₀.formalGroupLaw.Points, (u () : v.adicCompletionIntegers K) ≠ 0 ∧
++    ∃ u : W₀.formalGroupLaw_stollCompat.Points, (u () : v.adicCompletionIntegers K) ≠ 0 ∧
+       u ≠ z ∧ u ≠ W₀.negPoint z ∧ W₀.negPoint u ≠ z ∧ W₀.negPoint u ≠ W₀.negPoint z ∧
+       (u () : v.adicCompletionIntegers K) ≠ W₀.iotaEval (u ()) := by
+   obtain ⟨s, hsm, hs0, hst, hsιt, hsιs⟩ := exists_aux_param (z ()).2 h0
+   -- naming the point gives it the type `Points` syntactically, so `rw` can pass through
+   -- `negPoint u` (a term of type `Unit → maximalIdeal _` is only defeq to `Points`)
+-  set u : W₀.formalGroupLaw.Points := fun _ ↦ ⟨s, hsm⟩
++  set u : W₀.formalGroupLaw_stollCompat.Points := fun _ ↦ ⟨s, hsm⟩
+   refine ⟨u, hs0, ne_of_coe_ne hst, ne_of_coe_ne ?_, ne_of_coe_ne ?_, ne_of_coe_ne ?_, hsιs⟩
+   · rw [W₀.negPoint_apply_coe]
+     exact hsιt
+@@ -537,7 +537,7 @@
+ 
+ /-- The parameter of a sum of `𝔪`-points lies in every `𝔪`-power containing both
+ parameters (evaluation of the addition series preserves the level). -/
+-private lemma add_param_mem_pow {z z' : W₀.formalGroupLaw.Points} {n : ℕ}
++private lemma add_param_mem_pow {z z' : W₀.formalGroupLaw_stollCompat.Points} {n : ℕ}
+     (hz : (z () : v.adicCompletionIntegers K) ∈
+       maximalIdeal (v.adicCompletionIntegers K) ^ (n + 1))
+     (hz' : (z' () : v.adicCompletionIntegers K) ∈
+@@ -562,7 +562,7 @@
+   rw [hmax]
+   exact Ideal.mem_span_singleton.mpr (dvd_mul_right ..)
+ 
+-private lemma points_ne_zero_param {z : W₀.formalGroupLaw.Points} (hz0 : z ≠ 0) :
++private lemma points_ne_zero_param {z : W₀.formalGroupLaw_stollCompat.Points} (hz0 : z ≠ 0) :
+     (z () : v.adicCompletionIntegers K) ≠ 0 :=
+   fun h ↦ hz0 (funext fun i ↦ by cases i; exact Subtype.ext h)
+ 
+@@ -570,7 +570,7 @@
+ characteristic is trivial. -/
+ private lemma points_eq_zero_of_nsmul_prime_ne {p q : ℕ} (hp : p.Prime) (hq : q.Prime)
+     (hpmem : (p : v.adicCompletionIntegers K) ∈ maximalIdeal (v.adicCompletionIntegers K))
+-    (hqp : q ≠ p) {z : W₀.formalGroupLaw.Points} (hz : q • z = 0) : z = 0 := by
++    (hqp : q ≠ p) {z : W₀.formalGroupLaw_stollCompat.Points} (hz : q • z = 0) : z = 0 := by
+   by_contra hz0
+   obtain ⟨k, hk1, hkv⟩ := ChabautyColeman.exists_valued_eq_exp_neg (z ()).2
+     (points_ne_zero_param hz0)
+@@ -597,7 +597,7 @@
+ private lemma exists_mulSeries_split [CharZero K] {p : ℕ} (hp : p.Prime)
+     (hpmem : (p : v.adicCompletionIntegers K) ∈ maximalIdeal (v.adicCompletionIntegers K)) :
+     ∃ A B : MvPowerSeries Unit (v.adicCompletionIntegers K),
+-      W₀.formalGroupLaw.mulSeries p = MvPowerSeries.C (p : v.adicCompletionIntegers K) *
++      W₀.formalGroupLaw_stollCompat.mulSeries p = MvPowerSeries.C (p : v.adicCompletionIntegers K) *
+           MvPowerSeries.X () + (A + B) ∧
+       (∀ d : Unit →₀ ℕ, MvPowerSeries.coeff d A ∈
+         Ideal.span {(p : v.adicCompletionIntegers K)}) ∧
+@@ -605,14 +605,14 @@
+       (∀ d : Unit →₀ ℕ, d.degree < p → MvPowerSeries.coeff d B = 0) := by
+   obtain ⟨A, hA⟩ : ∃ A : MvPowerSeries Unit (v.adicCompletionIntegers K),
+       ∀ d : Unit →₀ ℕ, MvPowerSeries.coeff d A = if 2 ≤ d () ∧ ¬ p ∣ d () then
+-        MvPowerSeries.coeff d (W₀.formalGroupLaw.mulSeries p) else 0 :=
++        MvPowerSeries.coeff d (W₀.formalGroupLaw_stollCompat.mulSeries p) else 0 :=
+     ⟨fun d ↦ if 2 ≤ d () ∧ ¬ p ∣ d () then
+-      MvPowerSeries.coeff d (W₀.formalGroupLaw.mulSeries p) else 0, fun _ ↦ rfl⟩
++      MvPowerSeries.coeff d (W₀.formalGroupLaw_stollCompat.mulSeries p) else 0, fun _ ↦ rfl⟩
+   obtain ⟨B, hB⟩ : ∃ B : MvPowerSeries Unit (v.adicCompletionIntegers K),
+       ∀ d : Unit →₀ ℕ, MvPowerSeries.coeff d B = if 2 ≤ d () ∧ p ∣ d () then
+-        MvPowerSeries.coeff d (W₀.formalGroupLaw.mulSeries p) else 0 :=
++        MvPowerSeries.coeff d (W₀.formalGroupLaw_stollCompat.mulSeries p) else 0 :=
+     ⟨fun d ↦ if 2 ≤ d () ∧ p ∣ d () then
+-      MvPowerSeries.coeff d (W₀.formalGroupLaw.mulSeries p) else 0, fun _ ↦ rfl⟩
++      MvPowerSeries.coeff d (W₀.formalGroupLaw_stollCompat.mulSeries p) else 0, fun _ ↦ rfl⟩
+   have hdeg : ∀ d : Unit →₀ ℕ, d.degree = d () := fun d ↦ by
+     rw [show d = Finsupp.single () (d ()) from Finsupp.ext fun i ↦ by cases i; simp,
+       Finsupp.degree_single, Finsupp.single_eq_same]
+@@ -625,7 +625,7 @@
+       · have hd0 : d = 0 := hd.trans (by rw [h0, Finsupp.single_zero])
+         subst hd0
+         rw [MvPowerSeries.coeff_zero_eq_constantCoeff_apply,
+-          W₀.formalGroupLaw.constantCoeff_mulSeries p,
++          W₀.formalGroupLaw_stollCompat.constantCoeff_mulSeries p,
+           if_neg (show ¬((0 : Unit →₀ ℕ) = Finsupp.single () 1) from fun hc ↦
+             one_ne_zero (Finsupp.single_eq_zero.mp hc.symm)),
+           if_neg (show ¬(2 ≤ (0 : Unit →₀ ℕ) () ∧ ¬ p ∣ (0 : Unit →₀ ℕ) ()) from by simp),
+@@ -651,7 +651,7 @@
+   · intro d
+     rw [hA]
+     split_ifs with h
+-    · exact ChabautyColeman.coeff_mulSeries_mem_span W₀.formalGroupLaw hp hpmem h.2
++    · exact ChabautyColeman.coeff_mulSeries_mem_span W₀.formalGroupLaw_stollCompat hp hpmem h.2
+     · exact zero_mem _
+   · intro d hlow
+     rw [hdeg] at hlow
+@@ -691,7 +691,7 @@
+     (hpmem : (p : v.adicCompletionIntegers K) ∈ maximalIdeal (v.adicCompletionIntegers K))
+     (hpram : (p : v.adicCompletionIntegers K) ∉
+       maximalIdeal (v.adicCompletionIntegers K) ^ (p - 1))
+-    {z : W₀.formalGroupLaw.Points} (hz : p • z = 0) : z = 0 := by
++    {z : W₀.formalGroupLaw_stollCompat.Points} (hz : p • z = 0) : z = 0 := by
+   by_contra hz0
+   obtain ⟨k, hk1, hkv⟩ := ChabautyColeman.exists_valued_eq_exp_neg (z ()).2
+     (points_ne_zero_param hz0)
+@@ -701,7 +701,7 @@
+   obtain ⟨e, he1, hele, hev, hpe⟩ := exists_ramificationBound hp hpmem hpram
+   -- the vanishing of `ψ_p(t)` and the two tail estimates
+   have h0 : MvPSeries.eval (fun _ : Unit ↦ (z () : v.adicCompletionIntegers K))
+-      (W₀.formalGroupLaw.mulSeries p) = 0 := by
++      (W₀.formalGroupLaw_stollCompat.mulSeries p) = 0 := by
+     rw [← W₀.nsmul_apply_coe_eq_eval, hz, FormalGroupLaw.zero_apply_coe]
+   obtain ⟨A, B, hsplit, hAmem, hAlow, hBlow⟩ := exists_mulSeries_split (W₀ := W₀) hp hpmem
+   have hE : MvPowerSeries.HasEval (fun _ : Unit ↦ (z () : v.adicCompletionIntegers K)) :=
+@@ -762,7 +762,7 @@
+   constructor <;> intro h <;> lia
+ 
+ /-- The parameter map modulo `𝔪^(k+2)` is additive on parameters in `𝔪^(k+1)`. -/
+-private lemma mk_add_param {k : ℕ} {z z' : W₀.formalGroupLaw.Points}
++private lemma mk_add_param {k : ℕ} {z z' : W₀.formalGroupLaw_stollCompat.Points}
+     (hz : (z () : v.adicCompletionIntegers K) ∈
+       maximalIdeal (v.adicCompletionIntegers K) ^ (k + 1))
+     (hz' : (z' () : v.adicCompletionIntegers K) ∈
+--- a/EllipticCurves/WeierstrassFormalGroup/GroupLaw.lean
++++ b/EllipticCurves/WeierstrassFormalGroup/GroupLaw.lean
+@@ -10,7 +10,7 @@
+ Over the fraction field of a domain, the addition series realizes the group law of the curve
+ `(t, w(t))` (the `Domain` and `Assembly` sections); the universal curve over
+ `ℤ[A₁, …, A₆]⟦…⟧` then yields associativity (`Universal`). Assembling all the axioms gives
+-`WeierstrassCurve.formalGroupLaw`, the one-dimensional `ChabautyColeman.FormalGroupLaw` of the
++`WeierstrassCurve.formalGroupLaw_stollCompat`, the one-dimensional `ChabautyColeman.FormalGroupLaw` of the
+ curve, together with the inverse property `subst_inverseSeries_addSeries`.
+ -/
+ 
+@@ -932,7 +932,7 @@
+ `(t, w(t))`, via the chord construction (Silverman, IV.1.1). One-dimensional, so the index
+ type is `Unit`. Associativity is proved via the group law of the universal curve over the
+ fraction field of `ℤ[A₁, …, A₆]⟦t₁, t₂, t₃⟧`. -/
+-noncomputable def formalGroupLaw (W : WeierstrassCurve O) : FormalGroupLaw O Unit where
++noncomputable def formalGroupLaw_stollCompat (W : WeierstrassCurve O) : FormalGroupLaw O Unit where
+   F := fun _ ↦ W.addSeries
+   zero_constantCoeff := fun _ ↦ W.constantCoeff_addSeries
+   add_zero' := fun _ ↦ W.subst_unitR_addSeries
